@@ -4,6 +4,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main {
   public static void main(String[] args) {
@@ -27,7 +29,6 @@ public class Main {
         BufferedReader in = new BufferedReader(
             new InputStreamReader(clientSocket.getInputStream()));
 
-        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
         String requestMessage = in.readLine();
         String requestTarget = requestMessage.split(" ")[1];
@@ -39,7 +40,19 @@ public class Main {
           String echoMessage = requestTarget.substring(6);
           httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
               + echoMessage.length() + "\r\n\r\n" + echoMessage;  
-        } else {
+        } else if(requestTarget.matches("/user-agent")){
+          String headerLine;
+          String ua="";
+          while((headerLine = in.readLine()) != null && !headerLine.isEmpty()) {
+            if(headerLine.startsWith("User-Agent:")){
+              ua = headerLine.substring("User-Agent:".length()).trim();
+              break;
+            }
+          }
+        
+          httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + ua.length() + "\r\n\r\n" + ua;
+        }
+        else {
           httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
         }
         System.out.println("The received message from the client: " + requestMessage);

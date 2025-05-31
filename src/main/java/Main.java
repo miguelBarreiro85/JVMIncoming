@@ -32,8 +32,9 @@ public class Main {
         String requestMessage = in.readLine();
         String requestTarget = requestMessage.split(" ")[1];
         String httpResponse;
-        if (requestTarget.matches("/echo/\\w+/")) {
-          String echoMessage = requestTarget.substring(6, requestTarget.length() - 1);
+        System.out.println("request target: " + requestTarget);
+        if (requestTarget.matches("/echo/\\w+")) {
+          String echoMessage = requestTarget.substring(6);
           httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
               + echoMessage.length() + "\r\n\r\n" + echoMessage;  
         } else {

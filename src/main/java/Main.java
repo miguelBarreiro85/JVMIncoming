@@ -32,8 +32,10 @@ public class Main {
         String requestMessage = in.readLine();
         String requestTarget = requestMessage.split(" ")[1];
         String httpResponse;
-        if (requestTarget.equals("/")) {
-          httpResponse = "HTTP/1.1 200 OK\r\n\r\n";  
+        if (requestTarget.matches("/echo/\\w+/")) {
+          String echoMessage = requestTarget.substring(6, requestTarget.length() - 1);
+          httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+              + echoMessage.length() + "\r\n\r\n" + echoMessage;  
         } else {
           httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
         }

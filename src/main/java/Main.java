@@ -30,9 +30,14 @@ public class Main {
         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
         String requestMessage = in.readLine();
+        String requestTarget = requestMessage.split(" ")[1];
+        String httpResponse;
+        if (requestTarget.equals("/")) {
+          httpResponse = "HTTP/1.1 200 OK\r\n\r\n";  
+        } else {
+          httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
+        }
         System.out.println("The received message from the client: " + requestMessage);
-
-        String httpResponse = "HTTP/1.1 200 OK\r\n\r\n";
 
         clientSocket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
         clientSocket.close();

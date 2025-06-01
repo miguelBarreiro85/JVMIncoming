@@ -4,12 +4,14 @@ import java.net.Socket;
 
 public class Main {
 
+  public static String fileDir;
   
   public static void main(String[] args) {
     // You can use print statements as follows for debugging, they'll be visible
     // when running tests.
     System.out.println("Logs from your program will appear here!");
 
+    Main.fileDir = args.length > 0 ? args[1] : null;
     // Uncomment this block to pass the first stage
     //
     try {

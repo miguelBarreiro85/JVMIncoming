@@ -10,7 +10,8 @@
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}",
-            "java.home": "/usr/lib/jvm/java-21-openjdk-amd64"
+            "java.home": "/usr/lib/jvm/java-21-openjdk-amd64",
+            "args": "--directory /tmp"
         },
         {
             "type": "java",

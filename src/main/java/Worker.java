@@ -1,12 +1,16 @@
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Worker extends Thread {
     private Socket socket;
@@ -14,19 +18,74 @@ public class Worker extends Thread {
     private String target;
     private BufferedReader in;
     private String requestMessage;
+    private HashMap<String, String> headers = new HashMap<>();
+    private byte[] body;
 
     public Worker(Socket socket) {
         this.socket = socket;
         try {
-            this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
-            this.requestMessage = in.readLine();
-            this.method = requestMessage.split(" ")[0];
-            this.target = requestMessage.split(" ")[1];
-        } catch (Exception e) {
+            InputStream in = this.socket.getInputStream();
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int curr = 0;
 
+            //write the method and target to the buffer
+            while(true){
+                curr = in.read();
+                if(curr == '\r'){
+                    curr = in.read();
+                    break;
+                }
+                buffer.write(curr);
+            }
+
+            String tmp = buffer.toString("UTF-8");
+            this.method = tmp.split(" ")[0].trim();
+            this.target = tmp.split(" ")[1].trim();
+
+            buffer.reset();
+            //Read the headers
+            while(true){
+                curr = in.read();
+                buffer.write(curr);
+                if(buffer.size() >= 4){
+                    byte[] last4 = buffer.toByteArray();
+                    int len = last4.length;
+                    if(last4[len-1] == '\n' && last4[len-2] == '\r' && last4[len-3] == '\n' && last4[len-4] == '\r'){
+                        break;
+                    }
+                }
+            }
+            
+            //Read the Headers to the MAP
+            String headers = buffer.toString("UTF-8");
+            String[] headerLines = headers.split("\r\n");
+            for (String header : headerLines) {
+                if(header.contains(":")){
+                    String k = header.split(":")[0].trim();
+                    String v = header.split(":")[1].trim();
+                    this.headers.put(k, v);
+                }
+            }
+
+            //READ the body
+            int cl = 0;
+            if(this.headers.containsKey("Content-Length")){
+                cl = Integer.parseInt(this.headers.get("Content-Length"));
+            }
+            this.body = new byte[cl];
+            int bytesRead = 0;
+            while(bytesRead < cl){
+                int res = in.read(this.body, bytesRead, cl - bytesRead);
+                if (res == -1) break;
+                bytesRead += res;
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
 
     }
+
+    
 
     public void run() {
         try {
@@ -64,22 +123,10 @@ public class Worker extends Thread {
 
     private void handlePostFile() throws Exception{
         Path filePath = this.getFilePath();
-        String body = this.getBody();
-        Files.write(filePath, body.getBytes("UTF-8"));
+        
+        Files.write(filePath, this.body);
         String httpResponse = "HTTP/1.1 201 Created\r\n\r\n";
         this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
-    }
-
-    private String getBody() throws Exception {
-        String line;
-        String body = "";
-        do  {
-            line = this.in.readLine();
-        }while(line != "\r\n");
-        while ((line = this.in.readLine()) != null) {
-            body += line;
-        }
-        return body;
     }
 
     private String getFileName(){

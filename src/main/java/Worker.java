@@ -53,7 +53,7 @@ public class Worker extends Thread{
             try {
                 Path filePath = Paths.get(Main.fileDir, fileName);
                 byte[] b = Files.readAllBytes(filePath);
-                httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\\r\\nContent-Length: " + b.length + "\r\n\r\n";
+                httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + b.length + "\r\n\r\n";
                 this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
                 this.socket.getOutputStream().write(b);
             }catch(NoSuchFileException e) {

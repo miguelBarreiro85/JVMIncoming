@@ -39,9 +39,9 @@ public class Worker extends Thread {
             } else if (this.target.matches("/user-agent")) {
                 this.handleUserAgent();
             } else if (this.target.matches("/files/.*")) {
-                if (this.method == "GET") {
+                if (this.method.equals("GET")) {
                     this.handleGetFile();
-                } else if (this.method == "POST") {
+                } else if (this.method.equals("POST")) {
                     this.handlePostFile();
                 } else {
                     this.handleNotFound();

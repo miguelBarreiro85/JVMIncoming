@@ -37,6 +37,8 @@ public class Worker extends Thread {
             this.method = tmp.split(" ")[0].trim();
             this.target = tmp.split(" ")[1].trim();
 
+            System.out.println("Target: " + this.target);
+            System.out.println("Method: " + this.method);
             buffer.reset();
             //Read the headers
             while(true){
@@ -61,6 +63,7 @@ public class Worker extends Thread {
                     this.headers.put(k, v);
                 }
             }
+            System.out.println("HEADERS: " + this.headers.toString());
 
             //READ the body
             int cl = 0;
@@ -74,6 +77,7 @@ public class Worker extends Thread {
                 if (res == -1) break;
                 bytesRead += res;
             }
+            System.out.println("BODY LENGTH: " + cl);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

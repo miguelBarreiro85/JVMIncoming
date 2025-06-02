@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 
 public class Worker extends Thread {
-    private Socket socket;
+    private final Socket socket;
     private String method;
     private String target;
     private BufferedReader in;
@@ -24,19 +24,14 @@ public class Worker extends Thread {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             int prev = -1, curr;
 
-            System.out.println("Start reading target" + in.toString());
-            // write the method and target to the buffer
             while (true) {
-                System.out.print("r");
                 curr = in.read();
-                System.out.print((char)curr);
                 if (prev == '\r' && curr == '\n') {
                     break;
                 }
                 buffer.write(curr);
                 prev = curr;
             }
-            System.out.println("Finishi reading target");
 
             String tmp = buffer.toString("UTF-8");
             this.method = tmp.split(" ")[0].trim();

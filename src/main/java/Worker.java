@@ -104,7 +104,7 @@ public class Worker extends Thread {
             } else {
                 this.handleNotFound();
             }
-            
+            this.socket.getOutputStream().flush();
             this.socket.close();
         } catch (Exception e) {
             System.out.println(e.toString());

@@ -82,7 +82,7 @@ public class Worker extends Thread {
             }
             System.out.println("BODY LENGTH: " + cl);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("REBENTOU: " + e.getMessage());
         }
 
     }

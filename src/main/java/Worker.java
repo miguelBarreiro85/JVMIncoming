@@ -1,23 +1,18 @@
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Map;
 
 public class Worker extends Thread {
     private Socket socket;
     private String method;
     private String target;
     private BufferedReader in;
-    private String requestMessage;
     private HashMap<String, String> headers = new HashMap<>();
     private byte[] body;
 
@@ -109,7 +104,7 @@ public class Worker extends Thread {
             } else {
                 this.handleNotFound();
             }
-            System.out.println("The received message from the client: " + requestMessage);
+            
             this.socket.close();
         } catch (Exception e) {
             System.out.println(e.toString());

@@ -24,6 +24,7 @@ public class Worker extends Thread {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             int prev = -1, curr;
 
+            System.out.println("Start reading target");
             // write the method and target to the buffer
             while (true) {
                 curr = in.read();
@@ -33,6 +34,7 @@ public class Worker extends Thread {
                 buffer.write(curr);
                 prev = curr;
             }
+            System.out.println("Finishi reading target");
 
             String tmp = buffer.toString("UTF-8");
             this.method = tmp.split(" ")[0].trim();

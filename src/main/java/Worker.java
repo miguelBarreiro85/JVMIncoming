@@ -6,7 +6,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Locale;
 
 public class Worker extends Thread {
     private final Socket socket;
@@ -28,7 +27,6 @@ public class Worker extends Thread {
             this.target = m.split(" ")[1].trim();
 
             String inputLine;
-            StringBuilder headers = new StringBuilder();
             while ((inputLine = in.readLine()) != null && !inputLine.isEmpty()) {
                 String k = inputLine.split(":")[0].trim();
                 String v = inputLine.split(":")[1].trim();
@@ -36,11 +34,11 @@ public class Worker extends Thread {
             }
             // get Content type length
             int contentLength = 0;
-            for (String header : headers.toString().split("\r\n")) {
-                if (header.toLowerCase(Locale.ROOT).contains("content-length:")) {
-                    contentLength = Integer.parseInt(header.split(":")[1].trim());
-                }
+            
+            if (this.headers.containsKey("Content-Length")) {
+                contentLength = Integer.parseInt(this.headers.get("Content-Length"));
             }
+            
 
             // read the next remaining bytes
             this.body = new char[contentLength];

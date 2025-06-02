@@ -17,6 +17,7 @@ public class Worker extends Thread {
     private byte[] body;
 
     public Worker(Socket socket) {
+        System.out.println("worker started");
         this.socket = socket;
         try {
             InputStream in = this.socket.getInputStream();

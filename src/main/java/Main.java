@@ -23,7 +23,7 @@ public class Main {
 
       do {
         Socket clientSocket = serverSocket.accept(); // Wait for connection from client.
-
+        System.out.println("Receive a connection: " + clientSocket.getInetAddress());
         Thread t = new Worker(clientSocket);
         t.start();
         

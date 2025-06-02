@@ -27,8 +27,9 @@ public class Worker extends Thread {
             System.out.println("Start reading target" + in.toString());
             // write the method and target to the buffer
             while (true) {
+                System.out.print("r");
                 curr = in.read();
-                System.out.println("Byte: " + (char)curr);
+                System.out.print((char)curr);
                 if (prev == '\r' && curr == '\n') {
                     break;
                 }

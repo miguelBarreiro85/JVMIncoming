@@ -29,7 +29,7 @@ public class Main {
         
         
       } while (true); // Keep the server running indefinitely
-    } catch (IOException e) {
+    } catch (Exception e) {
       System.out.println("IOException: " + e.getMessage());
     }
   }

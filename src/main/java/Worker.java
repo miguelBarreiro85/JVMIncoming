@@ -24,7 +24,7 @@ public class Worker extends Thread {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             int prev = -1, curr;
 
-            System.out.println("Start reading target");
+            System.out.println("Start reading target" + in.toString());
             // write the method and target to the buffer
             while (true) {
                 curr = in.read();

@@ -10,7 +10,7 @@ public class Main {
     // when running tests.
     System.out.println("Logs from your program will appear here!");
 
-    Main.fileDir = args.length > 0 ? args[1] : null;
+    Main.fileDir = args.length >= 1 ? args[1] : null;
     // Uncomment this block to pass the first stage
     //
     try {

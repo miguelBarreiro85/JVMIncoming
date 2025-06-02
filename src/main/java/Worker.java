@@ -1,12 +1,12 @@
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Locale;
 
 public class Worker extends Thread {
     private final Socket socket;
@@ -14,72 +14,37 @@ public class Worker extends Thread {
     private String target;
     private BufferedReader in;
     private HashMap<String, String> headers = new HashMap<>();
-    private byte[] body;
+    private char[] body;
 
     public Worker(Socket socket) {
         System.out.println("worker started");
         this.socket = socket;
+        
         try {
-            InputStream in = this.socket.getInputStream();
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int prev = -1, curr;
+            BufferedReader in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
 
-            while (true) {
-                curr = in.read();
-                if (prev == '\r' && curr == '\n') {
-                    break;
-                }
-                buffer.write(curr);
-                prev = curr;
+            String m = in.readLine();
+            this.method = m.split(" ")[0].trim();
+            this.target = m.split(" ")[1].trim();
+
+            String inputLine;
+            StringBuilder headers = new StringBuilder();
+            while ((inputLine = in.readLine()) != null && !inputLine.isEmpty()) {
+                String k = inputLine.split(":")[0].trim();
+                String v = inputLine.split(":")[1].trim();
+                this.headers.put(k, v);
             }
-
-            String tmp = buffer.toString("UTF-8");
-            this.method = tmp.split(" ")[0].trim();
-            this.target = tmp.split(" ")[1].trim();
-
-            System.out.println("Target: " + this.target);
-            System.out.println("Method: " + this.method);
-            buffer.reset();
-            // Read the headers
-            while (true) {
-                curr = in.read();
-                buffer.write(curr);
-                if (buffer.size() >= 4) {
-                    byte[] last4 = buffer.toByteArray();
-                    int len = last4.length;
-                    if (last4[len - 1] == '\n' && last4[len - 2] == '\r' && last4[len - 3] == '\n'
-                            && last4[len - 4] == '\r') {
-                        break;
-                    }
+            // get Content type length
+            int contentLength = 0;
+            for (String header : headers.toString().split("\r\n")) {
+                if (header.toLowerCase(Locale.ROOT).contains("content-length:")) {
+                    contentLength = Integer.parseInt(header.split(":")[1].trim());
                 }
             }
 
-            // Read the Headers to the MAP
-            String headers = buffer.toString("UTF-8");
-            String[] headerLines = headers.split("\r\n");
-            for (String header : headerLines) {
-                if (header.contains(":")) {
-                    String k = header.split(":")[0].trim();
-                    String v = header.split(":")[1].trim();
-                    this.headers.put(k, v);
-                }
-            }
-            System.out.println("HEADERS: " + this.headers.toString());
-
-            // READ the body
-            int cl = 0;
-            if (this.headers.containsKey("Content-Length")) {
-                cl = Integer.parseInt(this.headers.get("Content-Length"));
-            }
-            this.body = new byte[cl];
-            int bytesRead = 0;
-            while (bytesRead < cl) {
-                int res = in.read(this.body, bytesRead, cl - bytesRead);
-                if (res == -1)
-                    break;
-                bytesRead += res;
-            }
-            System.out.println("BODY LENGTH: " + cl);
+            // read the next remaining bytes
+            this.body = new char[contentLength];
+            in.read(this.body);
         } catch (Exception e) {
             System.out.println("REBENTOU: " + e.getMessage());
         }
@@ -123,7 +88,7 @@ public class Worker extends Thread {
     private void handlePostFile() throws Exception {
         Path filePath = this.getFilePath();
 
-        Files.write(filePath, this.body);
+        Files.write(filePath, new String(this.body).getBytes("UTF-8"));
         String httpResponse = "HTTP/1.1 201 Created\r\n\r\n";
         this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
     }

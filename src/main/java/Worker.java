@@ -22,16 +22,16 @@ public class Worker extends Thread {
         try {
             InputStream in = this.socket.getInputStream();
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int curr = 0;
+            int prev = -1, curr;
 
-            //write the method and target to the buffer
-            while(true){
+            // write the method and target to the buffer
+            while (true) {
                 curr = in.read();
-                if(curr == '\r'){
-                    curr = in.read();
+                if (prev == '\r' && curr == '\n') {
                     break;
                 }
                 buffer.write(curr);
+                prev = curr;
             }
 
             String tmp = buffer.toString("UTF-8");
@@ -41,24 +41,25 @@ public class Worker extends Thread {
             System.out.println("Target: " + this.target);
             System.out.println("Method: " + this.method);
             buffer.reset();
-            //Read the headers
-            while(true){
+            // Read the headers
+            while (true) {
                 curr = in.read();
                 buffer.write(curr);
-                if(buffer.size() >= 4){
+                if (buffer.size() >= 4) {
                     byte[] last4 = buffer.toByteArray();
                     int len = last4.length;
-                    if(last4[len-1] == '\n' && last4[len-2] == '\r' && last4[len-3] == '\n' && last4[len-4] == '\r'){
+                    if (last4[len - 1] == '\n' && last4[len - 2] == '\r' && last4[len - 3] == '\n'
+                            && last4[len - 4] == '\r') {
                         break;
                     }
                 }
             }
-            
-            //Read the Headers to the MAP
+
+            // Read the Headers to the MAP
             String headers = buffer.toString("UTF-8");
             String[] headerLines = headers.split("\r\n");
             for (String header : headerLines) {
-                if(header.contains(":")){
+                if (header.contains(":")) {
                     String k = header.split(":")[0].trim();
                     String v = header.split(":")[1].trim();
                     this.headers.put(k, v);
@@ -66,16 +67,17 @@ public class Worker extends Thread {
             }
             System.out.println("HEADERS: " + this.headers.toString());
 
-            //READ the body
+            // READ the body
             int cl = 0;
-            if(this.headers.containsKey("Content-Length")){
+            if (this.headers.containsKey("Content-Length")) {
                 cl = Integer.parseInt(this.headers.get("Content-Length"));
             }
             this.body = new byte[cl];
             int bytesRead = 0;
-            while(bytesRead < cl){
+            while (bytesRead < cl) {
                 int res = in.read(this.body, bytesRead, cl - bytesRead);
-                if (res == -1) break;
+                if (res == -1)
+                    break;
                 bytesRead += res;
             }
             System.out.println("BODY LENGTH: " + cl);
@@ -84,8 +86,6 @@ public class Worker extends Thread {
         }
 
     }
-
-    
 
     public void run() {
         try {
@@ -116,24 +116,24 @@ public class Worker extends Thread {
         }
     }
 
-    private void handleNotFound() throws Exception{
+    private void handleNotFound() throws Exception {
         String httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
         this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
     }
 
-    private void handlePostFile() throws Exception{
+    private void handlePostFile() throws Exception {
         Path filePath = this.getFilePath();
-        
+
         Files.write(filePath, this.body);
         String httpResponse = "HTTP/1.1 201 Created\r\n\r\n";
         this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
     }
 
-    private String getFileName(){
+    private String getFileName() {
         return this.target.substring("/files/".length());
     }
 
-    private Path getFilePath(){
+    private Path getFilePath() {
         return Paths.get(Main.fileDir, this.getFileName());
     }
 
@@ -150,11 +150,11 @@ public class Worker extends Thread {
             httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
             try {
                 this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
-            }catch(Exception e2) {
+            } catch (Exception e2) {
                 System.out.println("handleGetFile writing to socket error");
             }
-            
-        } catch(Exception e){
+
+        } catch (Exception e) {
             System.out.println("handleGetFile Reading file or writing");
         }
     }

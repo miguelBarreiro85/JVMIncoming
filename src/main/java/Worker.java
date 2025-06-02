@@ -85,6 +85,7 @@ public class Worker extends Thread {
     public void run() {
         try {
             System.out.println("Connection established with client: " + this.socket.getInetAddress());
+            System.out.println("Target: " + this.target);
 
             if (this.target.equals("/")) {
                 this.handleHome();

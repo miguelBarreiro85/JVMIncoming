@@ -28,6 +28,7 @@ public class Worker extends Thread {
             // write the method and target to the buffer
             while (true) {
                 curr = in.read();
+                System.out.println("Byte: " + (char)curr);
                 if (prev == '\r' && curr == '\n') {
                     break;
                 }

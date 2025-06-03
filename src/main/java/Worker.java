@@ -10,14 +10,12 @@ import java.util.zip.GZIPOutputStream;
 
 public class Worker extends Thread {
     private final Socket socket;
-    private byte[] body;
     private HttpRequest r;
     public static final String CONTENT_lENGTH = "Content-Length";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String CONTENT_ENCODING = "Content-Encoding";
 
     public Worker(Socket socket) {
-        System.out.println("worker started");
         this.socket = socket;
     }
 
@@ -66,7 +64,7 @@ public class Worker extends Thread {
 
     private void handlePostFile() throws Exception {
         Path filePath = this.getFilePath();
-        Files.write(filePath, this.body);
+        Files.write(filePath, this.r.getBody());
         HttpResponse res = new HttpResponse(201);
         res.writeTo(this.socket.getOutputStream());
     }
@@ -99,7 +97,7 @@ public class Worker extends Thread {
 
     private void handleUserAgent() throws Exception {
         String ua = "";
-        if (this.r.getHeaders().containsKey("User-Agent:")) {
+        if (this.r.getHeaders().containsKey("User-Agent")) {
             ua = this.r.getHeaders().get("User-Agent");
         }
 

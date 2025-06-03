@@ -1,68 +1,44 @@
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.zip.GZIPOutputStream;
 
 public class Worker extends Thread {
     private final Socket socket;
-    private String method;
-    private String target;
-    private BufferedReader in;
-    private HashMap<String, String> headers = new HashMap<>();
-    private char[] body;
+    private byte[] body;
+    private HttpRequest r;
+    public static final String CONTENT_lENGTH = "Content-Length";
+    public static final String CONTENT_TYPE = "Content-Type";
+    public static final String CONTENT_ENCODING = "Content-Encoding";
 
     public Worker(Socket socket) {
         System.out.println("worker started");
         this.socket = socket;
-        
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
-
-            String m = in.readLine();
-            this.method = m.split(" ")[0].trim();
-            this.target = m.split(" ")[1].trim();
-
-            String inputLine;
-            while ((inputLine = in.readLine()) != null && !inputLine.isEmpty()) {
-                String k = inputLine.split(":")[0].trim();
-                String v = inputLine.split(":")[1].trim();
-                this.headers.put(k, v);
-            }
-            // get Content type length
-            int contentLength = 0;
-            
-            if (this.headers.containsKey("Content-Length")) {
-                contentLength = Integer.parseInt(this.headers.get("Content-Length"));
-            }
-            
-
-            // read the next remaining bytes
-            this.body = new char[contentLength];
-            in.read(this.body);
-        } catch (Exception e) {
-            System.out.println("REBENTOU: " + e.getMessage());
-        }
-
     }
 
     public void run() {
         try {
-            System.out.println("Target: " + this.target);
+         
+            InputStream in = this.socket.getInputStream();
+            this.r = new HttpRequest(in);
 
-            if (this.target.equals("/")) {
+            System.out.println("Target: " + this.r.getTarget());
+
+            if (this.r.getTarget().equals("/")) {
                 this.handleHome();
-            } else if (this.target.matches("/echo/\\w+")) {
+            } else if (this.r.getTarget().matches("/echo/\\w+")) {
                 this.handleEcho();
-            } else if (this.target.matches("/user-agent")) {
+            } else if (this.r.getTarget().matches("/user-agent")) {
                 this.handleUserAgent();
-            } else if (this.target.matches("/files/.*")) {
-                if (this.method.equals("GET")) {
+            } else if (this.r.getTarget().matches("/files/.*")) {
+                if (this.r.getMethod().equals("GET")) {
                     this.handleGetFile();
-                } else if (this.method.equals("POST")) {
+                } else if (this.r.getMethod().equals("POST")) {
                     this.handlePostFile();
                 } else {
                     this.handleNotFound();
@@ -72,96 +48,95 @@ public class Worker extends Thread {
                 this.handleNotFound();
             }
             this.socket.getOutputStream().flush();
-            this.socket.close();
+            if(this.r.getHeaders().containsKey("Connection") && this.r.getHeaders().get("Connection").equals("Close")){
+                this.socket.close();
+            }else{
+                new Worker(this.socket).start();
+            }
+            
         } catch (Exception e) {
             System.out.println(e.toString());
         }
     }
 
     private void handleNotFound() throws Exception {
-        String httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
-        this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
+        HttpResponse res = new HttpResponse(404);
+        res.writeTo(this.socket.getOutputStream());
     }
 
     private void handlePostFile() throws Exception {
         Path filePath = this.getFilePath();
-
-        Files.write(filePath, new String(this.body).getBytes("UTF-8"));
-        String httpResponse = "HTTP/1.1 201 Created\r\n\r\n";
-        this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
+        Files.write(filePath, this.body);
+        HttpResponse res = new HttpResponse(201);
+        res.writeTo(this.socket.getOutputStream());
     }
 
     private String getFileName() {
-        return this.target.substring("/files/".length());
+        return this.r.getTarget().substring("/files/".length());
     }
 
     private Path getFilePath() {
         return Paths.get(Main.fileDir, this.getFileName());
     }
 
-    private void handleGetFile() {
-        String httpResponse;
+    private void handleGetFile() throws Exception {
         try {
             Path filePath = this.getFilePath();
             byte[] b = Files.readAllBytes(filePath);
-            httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
-                    + b.length + "\r\n\r\n";
-            this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
-            this.socket.getOutputStream().write(b);
-        } catch (NoSuchFileException e) {
-            httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
-            try {
-                this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
-            } catch (Exception e2) {
-                System.out.println("handleGetFile writing to socket error");
-            }
 
+            HashMap<String, String> h = new HashMap<>();
+            h.put(Worker.CONTENT_TYPE, "application/octet-stream");
+            h.put(Worker.CONTENT_lENGTH, Integer.toString(b.length));
+            HttpResponse res = new HttpResponse(200, h, b);
+            res.writeTo(this.socket.getOutputStream());
+        } catch (NoSuchFileException e) {
+            HttpResponse res = new HttpResponse(404);
+            res.writeTo(this.socket.getOutputStream());
         } catch (Exception e) {
             System.out.println("handleGetFile Reading file or writing");
         }
     }
 
-    private void handleUserAgent() {
-        String headerLine, httpResponse;
+    private void handleUserAgent() throws Exception {
         String ua = "";
-        try {
-            while ((headerLine = this.in.readLine()) != null && !headerLine.isEmpty()) {
-                if (headerLine.startsWith("User-Agent:")) {
-                    ua = headerLine.substring("User-Agent:".length()).trim();
-                    break;
-                }
-            }
-            httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + ua.length() + "\r\n\r\n"
-                    + ua;
-        } catch (Exception e) {
-            System.out.println("Error while reading");
-            httpResponse = "HTTP/1.1 500 OK\r\n\r\n"
-                    + ua;
+        if (this.r.getHeaders().containsKey("User-Agent:")) {
+            ua = this.r.getHeaders().get("User-Agent");
         }
 
-        try {
-            this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
-        } catch (Exception e) {
-            System.out.println("Error writeing to socket");
-        }
+        HashMap<String, String> headers = new HashMap<>();
+        headers.put(Worker.CONTENT_TYPE, "text/plain");
+        headers.put(Worker.CONTENT_lENGTH, Integer.toString(ua.length()));
+        HttpResponse res = new HttpResponse(200, headers, ua.getBytes("UTF-8"));
+        res.writeTo(this.socket.getOutputStream());
+
     }
 
-    private void handleEcho() {
-        String echoMessage = this.target.substring(6);
-        String httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
-                + echoMessage.length() + "\r\n\r\n" + echoMessage;
-        try {
-            this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
-        } catch (Exception e) {
-            System.out.println("handleecho error writeing to sockey");
+    private void handleEcho() throws Exception {
+        String echoMessage = this.r.getTarget().substring(6);
+        HashMap<String, String> headers = new HashMap<>();
+        if (this.r.getHeaders().containsKey("Accept-Encoding")
+                && this.r.getHeaders().get("Accept-Encoding").contains("gzip")) {
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            try (GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream)) {
+                gzipStream.write(echoMessage.getBytes("UTF-8"));
+            }
+            headers.put(Worker.CONTENT_TYPE, "text/plain");
+            headers.put(Worker.CONTENT_ENCODING, "gzip");
+            headers.put(Worker.CONTENT_lENGTH, String.valueOf(byteStream.size()));
+            HttpResponse res = new HttpResponse(200, headers, byteStream.toByteArray());
+            res.writeTo(this.socket.getOutputStream());
+        } else {
+            headers.put(Worker.CONTENT_TYPE, "text/plain");
+            headers.put(Worker.CONTENT_lENGTH, Integer.toString(echoMessage.length()));
+            HttpResponse res = new HttpResponse(200, headers, echoMessage.getBytes("UTF-8"));
+            res.writeTo(this.socket.getOutputStream());
         }
-
     }
 
     public void handleHome() {
-        String httpResponse = "HTTP/1.1 200 OK\r\n\r\n";
+        HttpResponse res = new HttpResponse(200);
         try {
-            this.socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));
+            res.writeTo(this.socket.getOutputStream());
         } catch (Exception e) {
 
         }

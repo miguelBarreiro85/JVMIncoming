@@ -52,10 +52,11 @@ public class HttpResponse {
         });
         sb.append("\r\n");
         
-        byte[] headers = sb.toString().getBytes("UTF-8");
+        String r = sb.toString();
+        byte[] headers = r.getBytes("UTF-8");
         byte[] res = new byte[headers.length + body.length];
         System.arraycopy(headers, 0, res, 0, headers.length);
-        System.arraycopy(res, 0, res, headers.length, body.length);
+        System.arraycopy(this.body, 0, res, headers.length, body.length);
         return res;
     }
 }

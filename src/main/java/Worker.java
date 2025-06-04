@@ -26,25 +26,30 @@ public class Worker extends Thread {
             this.r = new HttpRequest(in);
 
             System.out.println("Target: " + this.r.getTarget());
-
+            HttpResponse res;
             if (this.r.getTarget().equals("/")) {
-                this.handleHome();
+                res = this.handleHome();
             } else if (this.r.getTarget().matches("/echo/\\w+")) {
-                this.handleEcho();
+                res = this.handleEcho();
             } else if (this.r.getTarget().matches("/user-agent")) {
-                this.handleUserAgent();
+                res = this.handleUserAgent();
             } else if (this.r.getTarget().matches("/files/.*")) {
                 if (this.r.getMethod().equals("GET")) {
-                    this.handleGetFile();
+                    res = this.handleGetFile();
                 } else if (this.r.getMethod().equals("POST")) {
-                    this.handlePostFile();
+                    res = this.handlePostFile();
                 } else {
-                    this.handleNotFound();
+                    res = this.handleNotFound();
                 }
 
             } else {
-                this.handleNotFound();
+                res =this.handleNotFound();
             }
+            if(this.r.getHeaders().containsKey("Connection") && this.r.getHeaders().get("Connection").equals("Close")){
+                res.addHeader("Connection", "Close");
+            }
+            
+            this.socket.getOutputStream().write(res.getBytes());
             this.socket.getOutputStream().flush();
             if(this.r.getHeaders().containsKey("Connection") && this.r.getHeaders().get("Connection").equals("Close")){
                 this.socket.close();
@@ -57,16 +62,16 @@ public class Worker extends Thread {
         }
     }
 
-    private void handleNotFound() throws Exception {
+    private HttpResponse handleNotFound() throws Exception {
         HttpResponse res = new HttpResponse(404);
-        res.writeTo(this.socket.getOutputStream());
+        return res;
     }
 
-    private void handlePostFile() throws Exception {
+    private HttpResponse handlePostFile() throws Exception {
         Path filePath = this.getFilePath();
         Files.write(filePath, this.r.getBody());
         HttpResponse res = new HttpResponse(201);
-        res.writeTo(this.socket.getOutputStream());
+        return res;
     }
 
     private String getFileName() {
@@ -77,7 +82,7 @@ public class Worker extends Thread {
         return Paths.get(Main.fileDir, this.getFileName());
     }
 
-    private void handleGetFile() throws Exception {
+    private HttpResponse handleGetFile() throws Exception {
         try {
             Path filePath = this.getFilePath();
             byte[] b = Files.readAllBytes(filePath);
@@ -86,16 +91,14 @@ public class Worker extends Thread {
             h.put(Worker.CONTENT_TYPE, "application/octet-stream");
             h.put(Worker.CONTENT_lENGTH, Integer.toString(b.length));
             HttpResponse res = new HttpResponse(200, h, b);
-            res.writeTo(this.socket.getOutputStream());
+            return res;
         } catch (NoSuchFileException e) {
             HttpResponse res = new HttpResponse(404);
-            res.writeTo(this.socket.getOutputStream());
-        } catch (Exception e) {
-            System.out.println("handleGetFile Reading file or writing");
+            return res;
         }
     }
 
-    private void handleUserAgent() throws Exception {
+    private HttpResponse handleUserAgent() throws Exception {
         String ua = "";
         if (this.r.getHeaders().containsKey("User-Agent")) {
             ua = this.r.getHeaders().get("User-Agent");
@@ -103,13 +106,12 @@ public class Worker extends Thread {
 
         HashMap<String, String> headers = new HashMap<>();
         headers.put(Worker.CONTENT_TYPE, "text/plain");
-        headers.put(Worker.CONTENT_lENGTH, Integer.toString(ua.length()));
         HttpResponse res = new HttpResponse(200, headers, ua.getBytes("UTF-8"));
-        res.writeTo(this.socket.getOutputStream());
+        return res;
 
     }
 
-    private void handleEcho() throws Exception {
+    private HttpResponse handleEcho() throws Exception {
         String echoMessage = this.r.getTarget().substring(6);
         HashMap<String, String> headers = new HashMap<>();
         if (this.r.getHeaders().containsKey("Accept-Encoding")
@@ -120,24 +122,18 @@ public class Worker extends Thread {
             }
             headers.put(Worker.CONTENT_TYPE, "text/plain");
             headers.put(Worker.CONTENT_ENCODING, "gzip");
-            headers.put(Worker.CONTENT_lENGTH, String.valueOf(byteStream.size()));
             HttpResponse res = new HttpResponse(200, headers, byteStream.toByteArray());
-            res.writeTo(this.socket.getOutputStream());
+            return res;
         } else {
             headers.put(Worker.CONTENT_TYPE, "text/plain");
-            headers.put(Worker.CONTENT_lENGTH, Integer.toString(echoMessage.length()));
             HttpResponse res = new HttpResponse(200, headers, echoMessage.getBytes("UTF-8"));
-            res.writeTo(this.socket.getOutputStream());
+            return res;
         }
     }
 
-    public void handleHome() {
+    public HttpResponse handleHome() throws Exception{
         HttpResponse res = new HttpResponse(200);
-        try {
-            res.writeTo(this.socket.getOutputStream());
-        } catch (Exception e) {
-
-        }
+        return res;
     }
 
 }

@@ -5,6 +5,7 @@ public class HttpResponse {
     private int code;
     private HashMap<String,String> headers;
     private byte[] body; 
+    private HttpRequest req;
 
     public HttpResponse(int code) {
         this(code, new HashMap<>(), new byte[0]);
@@ -18,9 +19,14 @@ public class HttpResponse {
         this.code = code;
         this.headers = headers;
         this.body = body;
+        this.headers.put("Content-Length", Integer.toString(body.length));
     }   
 
-    public void writeTo(OutputStream o) throws Exception{
+    public void addHeader(String key, String value){
+        this.headers.put(key, value);
+    }
+
+    public byte[] getBytes() throws Exception{
         StringBuilder sb = new StringBuilder();
         sb.append("HTTP/1.1 " + Integer.toString(this.code) + " ");
         String m = "";
@@ -44,12 +50,8 @@ public class HttpResponse {
         });
         sb.append("\r\n");
         
-        o.write(sb.toString().getBytes("UTF-8"));
-        if (this.headers.containsKey("Content-Length")){
-            int l = Integer.parseInt(this.headers.get("Content-Length"));
-            if (this.body.length == l){
-                o.write(this.body);
-            }
-        }
+        byte[] headers = sb.toString().getBytes("UTF-8");
+        byte[] res = new byte[headers.length + (body != null ? body.length : 0)];
+        return res;
     }
 }

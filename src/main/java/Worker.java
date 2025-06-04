@@ -45,13 +45,13 @@ public class Worker extends Thread {
             } else {
                 res =this.handleNotFound();
             }
-            if(this.r.getHeaders().containsKey("Connection") && this.r.getHeaders().get("Connection").equals("Close")){
-                res.addHeader("Connection", "Close");
+            if(this.r.getHeaders().containsKey("Connection") && this.r.getHeaders().get("Connection").equals("close")){
+                res.addHeader("Connection", "close");
             }
-            
+
             this.socket.getOutputStream().write(res.getBytes());
             this.socket.getOutputStream().flush();
-            if(this.r.getHeaders().containsKey("Connection") && this.r.getHeaders().get("Connection").equals("Close")){
+            if(this.r.getHeaders().containsKey("Connection") && this.r.getHeaders().get("Connection").equals("close")){
                 this.socket.close();
             }else{
                 new Worker(this.socket).start();

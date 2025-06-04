@@ -19,7 +19,9 @@ public class HttpResponse {
         this.code = code;
         this.headers = headers;
         this.body = body;
-        this.headers.put("Content-Length", Integer.toString(body.length));
+        if (body.length > 0){
+            this.headers.put("Content-Length", Integer.toString(body.length));
+        }
     }   
 
     public void addHeader(String key, String value){
@@ -51,7 +53,9 @@ public class HttpResponse {
         sb.append("\r\n");
         
         byte[] headers = sb.toString().getBytes("UTF-8");
-        byte[] res = new byte[headers.length + (body != null ? body.length : 0)];
+        byte[] res = new byte[headers.length + body.length];
+        System.arraycopy(headers, 0, res, 0, headers.length);
+        System.arraycopy(res, 0, res, headers.length, body.length);
         return res;
     }
 }

@@ -1,11 +1,10 @@
-import java.io.OutputStream;
+package httpserver;
 import java.util.HashMap;
 
 public class HttpResponse {
     private int code;
     private HashMap<String,String> headers;
     private byte[] body; 
-    private HttpRequest req;
 
     public HttpResponse(int code) {
         this(code, new HashMap<>(), new byte[0]);

@@ -1,13 +1,21 @@
+package httpserver;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HttpRequest {
     private String method;
     private String target;
     private HashMap<String, String> headers = new HashMap<>();
+    private HashMap<String, String> queryParams = new HashMap<>();
     private byte[] body;
     private int contentLength = 0;
+    private String domain;
+    private HashMap<String, String> routeParams = new HashMap<>();
 
     public HttpRequest(InputStream in) throws Exception {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -24,7 +32,34 @@ public class HttpRequest {
 
         String tmp = buffer.toString("UTF-8");
         this.method = tmp.split(" ")[0].trim();
-        this.target = tmp.split(" ")[1].trim();
+
+        String tmpTarget = tmp.split(" ")[1].trim();
+
+        Pattern p = Pattern
+                .compile("^(?:(?<protocol>https?)://(?<domain>[^/]+))?(?<path>/[^?]*)(?:\\\\?(?<query>.*))?");
+        Matcher m = p.matcher(tmpTarget);
+        if (m.find()) {
+            this.domain = m.group("domain");
+            this.target = m.group("path");
+            String queryString = m.group("query");
+            if (queryString != null) {
+                String[] queryPA = queryString.split("&");
+                for (String pa : queryPA) {
+                    String[] qp = pa.split("=");
+                    this.queryParams.put(qp[0], qp.length == 2 ? qp[1] : "");
+                }
+            }
+        }
+
+        if (tmpTarget.contains("?")) {
+            tmpTarget = URLDecoder.decode(this.target, "UTF-8");
+            String queryParamsStr = tmpTarget.split("\\?")[1].trim();
+            String[] queryPA = queryParamsStr.split("&");
+            for (String pa : queryPA) {
+                String[] qp = pa.split("=");
+                this.queryParams.put(qp[0], qp.length == 2 ? qp[1] : "");
+            }
+        }
 
         buffer.reset();
         // Read the headers
@@ -54,7 +89,7 @@ public class HttpRequest {
         System.out.println("HEADERS: " + this.headers.toString());
 
         // READ the body
-        
+
         if (this.headers.containsKey("Content-Length")) {
             this.contentLength = Integer.parseInt(this.headers.get("Content-Length"));
         }
@@ -68,9 +103,35 @@ public class HttpRequest {
         }
     }
 
-    public String getMethod() { return method; }
-    public String getTarget() { return target; }
-    public HashMap<String, String> getHeaders() { return headers; }
-    public byte[] getBody() { return body; }
-    public int getContentLength() { return contentLength; }
+    public HashMap<String, String> getRouteParams(){
+        return this.routeParams;
+    }
+    
+    public void setRouteParams(HashMap<String, String> routeParams){
+        this.routeParams = routeParams;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public String getTarget() {
+        return target;
+    }
+
+    public HashMap<String, String> getHeaders() {
+        return headers;
+    }
+
+    public byte[] getBody() {
+        return body;
+    }
+
+    public int getContentLength() {
+        return contentLength;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
 }

@@ -8,6 +8,10 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.zip.GZIPOutputStream;
 
+import app.Main;
+import httpserver.HttpRequest;
+import httpserver.HttpResponse;
+
 public class Worker extends Thread {
     private final Socket socket;
     private HttpRequest r;

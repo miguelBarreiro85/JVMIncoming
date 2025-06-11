@@ -1,8 +1,10 @@
 package httpserver;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.zip.GZIPOutputStream;
 
 public class Resolver extends Thread {
     private Socket socket;
@@ -56,16 +58,27 @@ public class Resolver extends Thread {
                 if (match) {
                     HandlerInfo h = l.get(path);
                     Method m = h.controllerClass.getMethod(h.methodName, HttpRequest.class);
-                    // Optionally, set routeParams in req if you want to access them in the
-                    // controller
                     req.setRouteParams(routeParams);
                     res = (HttpResponse) m.invoke(h.controllerClass, req);
+                    
+                    if (req.getHeaders().containsKey(Headers.ACCEP_ENCODING)
+                            && req.getHeaders().get(Headers.ACCEP_ENCODING).contains("gzip")) {
+                        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                        try (GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream)) {
+                            gzipStream.write(res.getBody());
+                        }
+                        
+                        res.addHeader(Headers.CONTENT_ENCODING, "gzip");
+                        res.setBody(byteStream.toByteArray());
+                    }
                     break;
                 }
             }
 
-            
-            if (req.getHeaders().containsKey(Headers.CONNECTION) && req.getHeaders().get(Headers.CONNECTION).equals("close")) {
+            res.addHeader(Headers.CONTENT_lENGTH, Integer.toString(res.getBody().length));
+
+            if (req.getHeaders().containsKey(Headers.CONNECTION)
+                    && req.getHeaders().get(Headers.CONNECTION).equals("close")) {
                 res.addHeader(Headers.CONNECTION, "close");
                 this.socket.getOutputStream().write(res.getBytes());
                 this.socket.getOutputStream().flush();

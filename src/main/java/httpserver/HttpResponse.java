@@ -18,13 +18,15 @@ public class HttpResponse {
         this.code = code;
         this.headers = headers;
         this.body = body;
-        if (body.length > 0){
-            this.headers.put("Content-Length", Integer.toString(body.length));
-        }
     }   
 
     public void addHeader(String key, String value){
         this.headers.put(key, value);
+    }
+
+
+    public byte[] getBody(){
+        return this.body;
     }
 
     public byte[] getBytes() throws Exception{
@@ -57,5 +59,9 @@ public class HttpResponse {
         System.arraycopy(headers, 0, res, 0, headers.length);
         System.arraycopy(this.body, 0, res, headers.length, body.length);
         return res;
+    }
+
+    public void setBody(byte[] byteArray) {
+        this.body = byteArray;
     }
 }

@@ -4,6 +4,8 @@ import java.net.Socket;
 import java.util.HashMap;
 
 public class Server {
+    public static String fileDir;
+    
     static HashMap<String, HandlerInfo> getList = new HashMap<>();
     static HashMap<String, HandlerInfo> postList = new HashMap<>();
     static HashMap<String, HandlerInfo> deleteList = new HashMap<>();

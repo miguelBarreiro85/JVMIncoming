@@ -1,17 +1,13 @@
 package app.controllers;
-
-import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.zip.GZIPOutputStream;
-
-import app.Main;
 import httpserver.Headers;
 import httpserver.HttpRequest;
 import httpserver.HttpResponse;
+import httpserver.Server;
 
 public class TestController {
     public static HttpResponse getHome(HttpRequest req) {
@@ -25,22 +21,10 @@ public class TestController {
         }
 
         HashMap<String, String> headers = new HashMap<>();
-
-        if (req.getHeaders().containsKey(Headers.ACCEP_ENCODING)
-                && req.getHeaders().get(Headers.ACCEP_ENCODING).contains("gzip")) {
-            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-            try (GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream)) {
-                gzipStream.write(echoMessage.getBytes("UTF-8"));
-            }
-            headers.put(Headers.CONTENT_TYPE, "text/plain");
-            headers.put(Headers.CONTENT_ENCODING, "gzip");
-            HttpResponse res = new HttpResponse(200, headers, byteStream.toByteArray());
-            return res;
-        } else {
-            headers.put(Headers.CONTENT_TYPE, "text/plain");
-            HttpResponse res = new HttpResponse(200, headers, echoMessage.getBytes("UTF-8"));
-            return res;
-        }
+        headers.put(Headers.CONTENT_TYPE, "text/plain");
+        HttpResponse res = new HttpResponse(200, headers, echoMessage.getBytes("UTF-8"));
+        return res;
+    
     }
 
     public static HttpResponse handleUserAgent(HttpRequest req) throws Exception {
@@ -85,6 +69,6 @@ public class TestController {
     }
 
     private static Path getFilePath(String filename) {
-        return Paths.get(Main.fileDir, filename);
+        return Paths.get(Server.fileDir, filename);
     }
 }

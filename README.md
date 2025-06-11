@@ -1,38 +1,30 @@
-[![progress-banner](https://backend.codecrafters.io/progress/http-server/a929bbcc-4950-431e-9c45-76e6882cc1e3)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+Recently I took on an incredible challenge from Codecrafters: building an HTTP server in Java completely from scratch!
 
-This is a starting point for Java solutions to the
-["Build Your Own HTTP server" Challenge](https://app.codecrafters.io/courses/http-server/overview).
+At first glance, the task seemed simple, but the learning journey was anything but — from understanding the fundamentals of the web, handling TCP connections, parsing requests and headers, to implementing dynamic routes, gzip compression, and much more.
 
-[HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol) is the
-protocol that powers the web. In this challenge, you'll build a HTTP/1.1 server
-that is capable of serving multiple clients.
+Beyond the technical depth, it was a fantastic opportunity to practice clean code, proper architecture, testing, and debugging. Seeing the server handle multiple clients in parallel and pass all the test cases was incredibly rewarding!
 
-Along the way you'll learn about TCP servers,
-[HTTP request syntax](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html),
-and more.
+I highly recommend this experience to anyone looking to go beyond the basics, get a behind-the-scenes look at how the web really works, and get their hands dirty in the best possible way.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+If you want to exchange ideas about the challenge or Java in general, feel free to reach out! 😉
 
-# Passing the first stage
 
-The entry point for your HTTP server implementation is in
-`src/main/java/Main.java`. Study and uncomment the relevant code, and push your
-changes to pass the first stage:
+TODO List
+- MiddleWares
+- Websockets
+- More Robust Header Parsing
+- Properly handle and respond to Connection: keep-alive and close.
+- More Complete HTTP Responses
+- MIME Type Support
+- Logging and Monitoring
+- Measure response times and track active connections.
+- HTTPS Support
+- Serve content over TLS/SSL
+- Cookies and Session Support
+- CORS Support
+- Allow configuration and sending of CORS headers (Access-Control-Allow-Origin, etc.).
+- Implement chunked transfer encoding.
+- Documentation and Test
+- Create automated tests for core features.
 
-```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
-```
-
-Time to move on to the next stage!
-
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `mvn` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main/java/Main.java`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+#java #backend #http #codecrafters #development #programming #challenge
